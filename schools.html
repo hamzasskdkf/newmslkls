@@ -1,0 +1,1360 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1e40af">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام أقساط مدرسي - ثانوية الفجر الأهلية</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+  
+
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
+        
+        * {
+            font-family: 'Tajawal', sans-serif;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .receipt {
+            width: 80mm;
+            padding: 10mm;
+            margin: 0 auto;
+            border: 1px dashed #000;
+        }
+ @media print {
+  /* إخفاء جميع العناصر أثناء الطباعة */
+  body * {
+    visibility: hidden;
+  }
+
+  /* جعل الوصلات مرئية فقط أثناء الطباعة */
+  .receipt, .receipt * {
+    visibility: visible;
+  }
+
+  /* ضبط الوصلات لتكون مرئية جنبًا إلى جنب */
+  #receipt-preview {
+    display: flex; /* استخدام flexbox لعرض الوصلات جنبًا إلى جنب */
+    justify-content: space-between; /* توزيع الوصلات بالتساوي */
+    gap: 10mm; /* إضافة فجوة بين الوصلات */
+    page-break-inside: avoid; /* تجنب تقسيم الوصلات عبر صفحات متعددة */
+    width: 100%; /* تأكد من أن الحاوية تغطي كامل العرض */
+  }
+
+  .receipt {
+    width: 48%; /* تحديد عرض الوصلات ليكون نصف عرض الصفحة */
+    padding: 10mm;
+    box-sizing: border-box;
+    page-break-inside: avoid; /* تجنب تقسيم الوصلات عبر صفحات متعددة */
+    border: none;
+    page-break-after: always; /* ضمان أن الوصلات تكون متتالية في نفس الصفحة */
+  }
+
+  /* إخفاء الأزرار أثناء الطباعة */
+  .no-print {
+    display: none !important;
+  }
+
+  /* تخصيص الطباعة على ورقة A4 أفقيًا (Landscape) */
+  @page {
+    size: A4 landscape; /* تعيين الحجم الأفقي لورقة A4 */
+    margin: 10mm; /* تحديد الهوامش */
+    overflow: visible; /* التأكد من أن المحتوى لا يتجاوز الورقة */
+  }
+
+  /* التأكد من أن الحاوية تأخذ كامل المساحة */
+  .receipt-preview-container {
+    display: block;
+    page-break-before: always; /* التأكد من أن الوصلات تبدأ من أول الصفحة */
+  }
+}
+
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen flex flex-col">
+        <header class="bg-blue-800 text-white shadow-lg">
+            <div class="container mx-auto px-4 py-4">
+                <h1 class="text-2xl md:text-3xl font-bold text-center">أقساط مدرسي - ثانوية الفجر الأهلية</h1>
+            </div>
+        </header>
+        
+ <nav class="bg-gradient-to-r from-blue-100 via-white to-blue-100 text-gray-800 shadow-lg rounded-b-2xl">
+    <div class="container mx-auto px-4 py-6">
+        <div class="flex flex-wrap justify-center gap-8" id="tabs">
+            <button class="tab-btn min-w-[160px] px-6 py-4 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-2xl shadow-md transition duration-300" data-tab="add-student">
+                إضافة طالب
+            </button>
+            <button class="tab-btn min-w-[160px] px-6 py-4 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-2xl shadow-md transition duration-300" data-tab="pay-fees">
+                تسديد الأقساط
+            </button>
+            <button class="tab-btn min-w-[160px] px-6 py-4 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-2xl shadow-md transition duration-300" data-tab="statistics">
+                الإحصائيات
+            </button>
+            <button class="tab-btn min-w-[160px] px-6 py-4 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-2xl shadow-md transition duration-300" data-tab="support">
+                الدعم
+            </button>
+        </div>
+    </div>
+</nav>
+
+
+        
+        <main class="flex-grow container mx-auto px-4 py-6">
+            <!-- إضافة طالب -->
+            <div id="add-student" class="tab-content active">
+                <div class="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
+                    <h2 class="text-xl font-bold mb-6 text-blue-800 border-b pb-2">إضافة طالب جديد</h2>
+                    
+                    <form id="student-form" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-gray-700 mb-2">اسم الطالب</label>
+                                <input type="text" id="student-name" class="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-gray-700 mb-2">البريد الإلكتروني</label>
+                                <input type="email" id="student-email" class="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-gray-700 mb-2">الصف</label>
+                                <select id="student-grade" class="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                                    <option value="">اختر الصف</option>
+                                    <option value="أول متوسط">أول متوسط</option>
+                                    <option value="ثاني متوسط">ثاني متوسط</option>
+                                    <option value="ثالث متوسط">ثالث متوسط</option>
+                                    <option value="ثالث خارجي">ثالث خارجي</option>
+                                    <option value="رابع علمي">رابع علمي</option>
+                                    <option value="رابع أدبي">رابع أدبي</option>
+                                    <option value="خامس علمي">خامس علمي</option>
+                                    <option value="خامس أدبي">خامس أدبي</option>
+                                    <option value="سادس علمي">سادس علمي</option>
+                                    <option value="سادس أدبي">سادس أدبي</option>
+                                    <option value="سادس خارجي">سادس خارجي</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-gray-700 mb-2">الشعبة</label>
+                                <select id="student-section" class="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                                    <option value="">اختر الشعبة</option>
+                                    <option value="أ">أ</option>
+                                    <option value="ب">ب</option>
+                                    <option value="ج">ج</option>
+                                    <option value="د">د</option>
+                                    <option value="هـ">هـ</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-gray-700 mb-2">المبلغ الكلي (دينار)</label>
+                                <input type="number" id="student-total-amount" class="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-gray-700 mb-2">الخصم </label>
+                                <input type="number" id="student-discount" class="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" min="0" max="500000" value="0">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-gray-700 mb-2">ملاحظات</label>
+                            <textarea id="student-notes" class="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" rows="3"></textarea>
+                        </div>
+                        
+                        <div class="flex justify-between pt-4">
+                            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition">إضافة الطالب</button>
+                            <div>
+                                <button type="button" id="edit-student-btn" class="bg-yellow-500 text-white px-6 py-2 rounded-md hover:bg-yellow-600 transition mr-2" disabled>تعديل</button>
+                                <button type="button" id="delete-student-btn" class="bg-red-500 text-white px-6 py-2 rounded-md hover:bg-red-600 transition" disabled>حذف</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="mt-8 bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto overflow-x-auto">
+                    <h3 class="text-lg font-bold mb-4 text-blue-800 border-b pb-2">قائمة الطلاب</h3>
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead>
+                            <tr>
+                                <th class="px-4 py-2 text-right">اسم الطالب</th>
+                                <th class="px-4 py-2 text-right">الصف</th>
+                                <th class="px-4 py-2 text-right">الشعبة</th>
+                                <th class="px-4 py-2 text-right">المبلغ الكلي</th>
+                                <th class="px-4 py-2 text-right">الخصم</th>
+                                <th class="px-4 py-2 text-right">المبلغ بعد الخصم</th>
+                                <th class="px-4 py-2 text-right">المدفوع</th>
+                                <th class="px-4 py-2 text-right">المتبقي</th>
+                                <th class="px-4 py-2 text-right">إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="students-table-body" class="divide-y divide-gray-200">
+                            <!-- سيتم إضافة الطلاب هنا -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- تسديد الأقساط -->
+            <div id="pay-fees" class="tab-content">
+                <div class="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
+                    <h2 class="text-xl font-bold mb-6 text-blue-800 border-b pb-2">تسديد الأقساط</h2>
+                    
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold mb-3">البحث عن طالب</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-gray-700 mb-2">اسم الطالب</label>
+                                <input type="text" id="search-name" class="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-gray-700 mb-2">الصف</label>
+                                <select id="search-grade" class="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">الكل</option>
+                                    <option value="أول متوسط">أول متوسط</option>
+                                    <option value="ثاني متوسط">ثاني متوسط</option>
+                                    <option value="ثالث متوسط">ثالث متوسط</option>
+                                    <option value="ثالث خارجي">ثالث خارجي</option>
+                                    <option value="رابع علمي">رابع علمي</option>
+                                    <option value="رابع أدبي">رابع أدبي</option>
+                                    <option value="خامس علمي">خامس علمي</option>
+                                    <option value="خامس أدبي">خامس أدبي</option>
+                                    <option value="سادس علمي">سادس علمي</option>
+                                    <option value="سادس أدبي">سادس أدبي</option>
+                                    <option value="سادس خارجي">سادس خارجي</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-gray-700 mb-2">الشعبة</label>
+                                <select id="search-section" class="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">الكل</option>
+                                    <option value="أ">أ</option>
+                                    <option value="ب">ب</option>
+                                    <option value="ج">ج</option>
+                                    <option value="د">د</option>
+                                    <option value="هـ">هـ</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <button id="search-btn" class="mt-4 bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition">بحث</button>
+                    </div>
+                    
+                    <div id="search-results" class="mt-6 hidden">
+                        <h3 class="text-lg font-semibold mb-3">نتائج البحث</h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead>
+                                    <tr>
+                                        <th class="px-4 py-2 text-right">اسم الطالب</th>
+                                        <th class="px-4 py-2 text-right">الصف</th>
+                                        <th class="px-4 py-2 text-right">الشعبة</th>
+                                        <th class="px-4 py-2 text-right">المبلغ بعد الخصم</th>
+                                        <th class="px-4 py-2 text-right">المدفوع</th>
+                                        <th class="px-4 py-2 text-right">المتبقي</th>
+                                        <th class="px-4 py-2 text-right">إجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="search-results-body" class="divide-y divide-gray-200">
+                                    <!-- سيتم إضافة نتائج البحث هنا -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div id="payment-form" class="mt-8 hidden">
+                        <h3 class="text-lg font-semibold mb-3">تسديد قسط</h3>
+                        <div class="p-4 bg-gray-50 rounded-lg mb-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <p><span class="font-semibold">اسم الطالب:</span> <span id="payment-student-name"></span></p>
+                                    <p><span class="font-semibold">الصف:</span> <span id="payment-student-grade"></span></p>
+                                    <p><span class="font-semibold">الشعبة:</span> <span id="payment-student-section"></span></p>
+                                </div>
+                                <div>
+                                    <p><span class="font-semibold">المبلغ الكلي بعد الخصم:</span> <span id="payment-total-after-discount"></span> دينار</p>
+                                    <p><span class="font-semibold">المبلغ المدفوع:</span> <span id="payment-paid-amount"></span> دينار</p>
+                                    <p><span class="font-semibold">المبلغ المتبقي:</span> <span id="payment-remaining-amount"></span> دينار</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <h4 class="font-semibold mb-3">إضافة دفعة جديدة</h4>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-gray-700 mb-2">المبلغ (دينار)</label>
+                                        <input type="number" id="payment-amount" class="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-gray-700 mb-2">رقم الوصل</label>
+                                        <input type="text" id="payment-receipt-number" class="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-gray-700 mb-2">تاريخ الدفع</label>
+                                        <input type="date" id="payment-date" class="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                                    </div>
+                                    
+                                    <div>
+                                        <button id="add-payment-btn" class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 transition">إضافة الدفعة</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h4 class="font-semibold mb-3">سجل الدفعات</h4>
+                                <div class="overflow-y-auto max-h-64 border rounded-md">
+                                    <table class="min-w-full divide-y divide-gray-200">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-4 py-2 text-right">التاريخ</th>
+                                                <th class="px-4 py-2 text-right">المبلغ</th>
+                                                <th class="px-4 py-2 text-right">رقم الوصل</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="payment-history" class="divide-y divide-gray-200">
+                                            <!-- سيتم إضافة سجل الدفعات هنا -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        
+                    <div class="mt-6 border-t pt-4">
+    <h4 class="font-semibold mb-3">طباعة وإرسال الوصل</h4>
+
+    <!-- حاوية الوصلين -->
+ <div id="receipt-preview" class="flex flex-row justify-between gap-4 print:flex-row print:gap-0 print:justify-between">
+   
+        <!-- وصل الطالب -->
+        <div class="receipt w-1/2 px-4 border-l print:border-none">
+            <div class="text-center mb-4">
+                <h3 class="text-xl font-bold">ثانوية الفجر الأهلية للبنين</h3>
+                <p class="text-sm">وصل استلام قسط مدرسي</p>
+            </div>
+            <div class="mb-4">
+                <p><span class="font-semibold">اسم الطالب:</span> <span id="receipt-student-name"></span></p>
+                <p><span class="font-semibold">الصف:</span> <span id="receipt-student-grade"></span></p>
+                <p><span class="font-semibold">الشعبة:</span> <span id="receipt-student-section"></span></p>
+                <p><span class="font-semibold">رقم الوصل:</span> <span id="receipt-number"></span></p>
+                <p><span class="font-semibold">تاريخ الدفع:</span> <span id="receipt-date"></span></p>
+            </div>
+            <div class="mb-4">
+                <p><span class="font-semibold">المبلغ المدفوع:</span> <span id="receipt-amount"></span> دينار</p>
+                <p><span class="font-semibold">المبلغ الكلي:</span> <span id="receipt-total"></span> دينار</p>
+                <p><span class="font-semibold">إجمالي المدفوع:</span> <span id="receipt-total-paid"></span> دينار</p>
+                <p><span class="font-semibold">المبلغ المتبقي:</span> <span id="receipt-remaining"></span> دينار</p>
+            </div>
+            <div class="text-center text-sm mt-6 pt-4 border-t">
+                <p>شارع مطعم ربيع الشام - مقابل مكتبة أستاذ منصور</p>
+                <p class="mt-2">شكراً لتعاملكم معنا</p>
+            </div>
+        </div>
+
+        <!-- وصل المدرسة (نفس المحتوى) -->
+      <div class="receipt w-1/2 px-4 border-l print:border-none">
+    <div class="text-center mb-4">
+        <h3 class="text-xl font-bold">ثانوية الفجر الأهلية للبنين</h3>
+        <p class="text-sm">وصل استلام قسط مدرسي</p>
+    </div>
+    <div class="mb-4">
+        <p><span class="font-semibold">اسم الطالب:</span> <span id="receipt-student-name-copy"></span></p>
+        <p><span class="font-semibold">الصف:</span> <span id="receipt-student-grade-copy"></span></p>
+        <p><span class="font-semibold">الشعبة:</span> <span id="receipt-student-section-copy"></span></p>
+        <p><span class="font-semibold">رقم الوصل:</span> <span id="receipt-number-copy"></span></p>
+        <p><span class="font-semibold">تاريخ الدفع:</span> <span id="receipt-date-copy"></span></p>
+    </div>
+    <div class="mb-4">
+        <p><span class="font-semibold">المبلغ المدفوع:</span> <span id="receipt-amount-copy"></span> دينار</p>
+        <p><span class="font-semibold">المبلغ الكلي:</span> <span id="receipt-total-copy"></span> دينار</p>
+        <p><span class="font-semibold">إجمالي المدفوع:</span> <span id="receipt-total-paid-copy"></span> دينار</p>
+        <p><span class="font-semibold">المبلغ المتبقي:</span> <span id="receipt-remaining-copy"></span> دينار</p>
+    </div>
+    <div class="text-center text-sm mt-6 pt-4 border-t">
+        <p>شارع مطعم ربيع الشام - مقابل مكتبة أستاذ منصور</p>
+        <p class="mt-2">شكراً لتعاملكم معنا</p>
+    </div>
+</div>
+    </div>
+
+                            <div class="flex flex-wrap gap-2">
+                                <button id="print-receipt-btn" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition">
+                                    <i class="fas fa-print mr-1"></i> طباعة الوصل
+                                </button>
+                                <button id="email-receipt-btn" class="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition">
+                                    <i class="fas fa-envelope mr-1"></i> إرسال الوصل بالبريد
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- الإحصائيات -->
+            <div id="statistics" class="tab-content">
+                <div class="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
+                    <h2 class="text-xl font-bold mb-6 text-blue-800 border-b pb-2">الإحصائيات</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                        <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                            <h3 class="text-lg font-semibold text-blue-800 mb-2">عدد الطلاب</h3>
+                            <p class="text-3xl font-bold" id="total-students">0</p>
+                        </div>
+                        
+                        <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                            <h3 class="text-lg font-semibold text-green-800 mb-2">إجمالي المبالغ</h3>
+                            <p class="text-3xl font-bold" id="total-fees">0 دينار</p>
+                        </div>
+                        
+                        <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                            <h3 class="text-lg font-semibold text-purple-800 mb-2">إجمالي المدفوع</h3>
+                            <p class="text-3xl font-bold" id="total-paid">0 دينار</p>
+                        </div>
+                        
+                        <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                            <h3 class="text-lg font-semibold text-yellow-800 mb-2">إجمالي المتبقي</h3>
+                            <p class="text-3xl font-bold" id="total-remaining">0 دينار</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div>
+                            <h3 class="text-lg font-semibold mb-4">نسبة التحصيل</h3>
+                            <div class="aspect-square">
+                                <canvas id="collection-chart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h3 class="text-lg font-semibold mb-4">توزيع الطلاب حسب الصف</h3>
+                            <div class="aspect-square">
+                                <canvas id="grades-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">توزيع الطلاب حسب الشعبة</h3>
+                        <div class="h-64">
+                            <canvas id="sections-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- الدعم -->
+            <div id="support" class="tab-content">
+                <div class="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
+                    <h2 class="text-xl font-bold mb-6 text-blue-800 border-b pb-2">الدعم والنسخ الاحتياطي</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-lg font-semibold mb-4">النسخ الاحتياطي</h3>
+                            <p class="mb-4 text-gray-600">قم بإنشاء نسخة احتياطية من بيانات النظام للحفاظ عليها.</p>
+                            <button id="backup-btn" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition mb-2 w-full">إنشاء نسخة احتياطية</button>
+                            <p class="text-sm text-gray-500 mb-6">سيتم تنزيل ملف النسخة الاحتياطية على جهازك.</p>
+                            
+                            <h3 class="text-lg font-semibold mb-4">استعادة النسخة الاحتياطية</h3>
+                            <p class="mb-4 text-gray-600">قم باستعادة بيانات النظام من نسخة احتياطية سابقة.</p>
+                            <div class="mb-4">
+                                <input type="file" id="restore-file" class="hidden" accept=".json">
+                                <label for="restore-file" class="block w-full bg-gray-200 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-300 transition text-center cursor-pointer">اختيار ملف النسخة الاحتياطية</label>
+                                <p id="selected-file-name" class="mt-2 text-sm text-gray-500">لم يتم اختيار ملف</p>
+                            </div>
+                            <button id="restore-btn" class="bg-yellow-600 text-white px-6 py-2 rounded-md hover:bg-yellow-700 transition w-full" disabled>استعادة النسخة الاحتياطية</button>
+                        </div>
+                        
+                        <div>
+                            <h3 class="text-lg font-semibold mb-4">تصدير البيانات</h3>
+                            <p class="mb-4 text-gray-600">قم بتصدير بيانات النظام إلى ملف Excel.</p>
+                            <div class="space-y-3">
+                                <button id="export-students-btn" class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 transition w-full">تصدير بيانات الطلاب</button>
+                                <button id="export-payments-btn" class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 transition w-full">تصدير بيانات الدفعات</button>
+                                <button id="export-all-btn" class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 transition w-full">تصدير جميع البيانات</button>
+                            </div>
+                            
+                            <h3 class="text-lg font-semibold mt-8 mb-4">مسح البيانات</h3>
+                            <p class="mb-4 text-gray-600">احذر! سيؤدي هذا الإجراء إلى حذف جميع البيانات من النظام.</p>
+                            <button id="clear-data-btn" class="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700 transition w-full">مسح جميع البيانات</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <footer class="bg-gray-800 text-white py-4 mt-8">
+            <div class="container mx-auto px-4 text-center">
+                <p>نظام أقساط مدرسي - ثانوية الفجر الأهلية  2025</p>
+                <p>مطور البرنامج - Hamza Shakir</p>
+            </div>
+        </footer>
+    </div>
+    
+    <!-- Modal for confirmations -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 id="modal-title" class="text-xl font-bold mb-4"></h3>
+            <p id="modal-message" class="mb-6"></p>
+            <div class="flex justify-end space-x-2">
+                <button id="modal-cancel" class="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400 transition">إلغاء</button>
+                <button id="modal-confirm" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition">تأكيد</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Initialize data storage
+        let students = JSON.parse(localStorage.getItem('students')) || [];
+        let payments = JSON.parse(localStorage.getItem('payments')) || [];
+        let currentStudentId = null;
+        let selectedStudentForPayment = null;
+        
+        // Set today's date as default for payment date
+        document.getElementById('payment-date').valueAsDate = new Date();
+        
+        // Tab navigation
+        document.querySelectorAll('.tab-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                // Hide all tab contents
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                
+                // Remove active class from all buttons
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                
+                // Show the selected tab content
+                const tabId = button.getAttribute('data-tab');
+                document.getElementById(tabId).classList.add('active');
+                button.classList.add('active');
+                
+                // Update statistics if statistics tab is selected
+                if (tabId === 'statistics') {
+                    updateStatistics();
+                }
+            });
+        });
+
+
+        // Student form submission
+        document.getElementById('student-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('student-name').value;
+            const email = document.getElementById('student-email').value;
+            const grade = document.getElementById('student-grade').value;
+            const section = document.getElementById('student-section').value;
+            const totalAmount = parseFloat(document.getElementById('student-total-amount').value);
+            const discount = parseFloat(document.getElementById('student-discount').value) || 0;
+            const notes = document.getElementById('student-notes').value;
+            
+            const totalAfterDiscount = totalAmount - discount;
+            
+            if (currentStudentId !== null) {
+                // Update existing student
+                const studentIndex = students.findIndex(s => s.id === currentStudentId);
+                if (studentIndex !== -1) {
+                    students[studentIndex] = {
+                        ...students[studentIndex],
+                        name,
+                        email,
+                        grade,
+                        section,
+                        totalAmount,
+                        discount,
+                        totalAfterDiscount,
+                        notes
+                    };
+                    
+                    showAlert('تم تعديل بيانات الطالب بنجاح');
+                }
+            } else {
+                // Add new student
+                const newStudent = {
+                    id: Date.now().toString(),
+                    name,
+                    email,
+                    grade,
+                    section,
+                    totalAmount,
+                    discount,
+                    totalAfterDiscount,
+                    notes,
+                    paidAmount: 0
+                };
+                
+                students.push(newStudent);
+                showAlert('تمت إضافة الطالب بنجاح');
+            }
+            
+            // Save to localStorage
+            localStorage.setItem('students', JSON.stringify(students));
+            
+            // Reset form and update table
+            resetStudentForm();
+            updateStudentsTable();
+        });
+        
+        // Reset student form
+        function resetStudentForm() {
+            document.getElementById('student-form').reset();
+            currentStudentId = null;
+            document.getElementById('edit-student-btn').disabled = true;
+            document.getElementById('delete-student-btn').disabled = true;
+        }
+        
+        // Update students table
+        function updateStudentsTable() {
+            const tableBody = document.getElementById('students-table-body');
+            tableBody.innerHTML = '';
+            
+            students.forEach(student => {
+                const row = document.createElement('tr');
+                
+                const paidAmount = student.paidAmount || 0;
+                const remainingAmount = student.totalAfterDiscount - paidAmount;
+                
+                row.innerHTML = `
+                    <td class="px-4 py-2">${student.name}</td>
+                    <td class="px-4 py-2">${student.grade}</td>
+                    <td class="px-4 py-2">${student.section}</td>
+                    <td class="px-4 py-2">${student.totalAmount.toLocaleString()} دينار</td>
+                    <td class="px-4 py-2">${student.discount}%</td>
+                    <td class="px-4 py-2">${student.totalAfterDiscount.toLocaleString()} دينار</td>
+                    <td class="px-4 py-2">${paidAmount.toLocaleString()} دينار</td>
+                    <td class="px-4 py-2">${remainingAmount.toLocaleString()} دينار</td>
+                    <td class="px-4 py-2">
+                        <button class="edit-btn bg-yellow-500 text-white px-2 py-1 rounded-md hover:bg-yellow-600 transition text-sm" data-id="${student.id}">تعديل</button>
+                        <button class="delete-btn bg-red-500 text-white px-2 py-1 rounded-md hover:bg-red-600 transition text-sm" data-id="${student.id}">حذف</button>
+                    </td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+            
+            // Add event listeners to edit and delete buttons
+            document.querySelectorAll('.edit-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    const studentId = button.getAttribute('data-id');
+                    editStudent(studentId);
+                });
+            });
+            
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    const studentId = button.getAttribute('data-id');
+                    showConfirmModal(
+                        'حذف طالب',
+                        'هل أنت متأكد من حذف هذا الطالب؟ سيتم حذف جميع بيانات الدفعات المرتبطة به أيضاً.',
+                        () => deleteStudent(studentId)
+                    );
+                });
+            });
+        }
+        
+        // Edit student
+        function editStudent(studentId) {
+            const student = students.find(s => s.id === studentId);
+            if (student) {
+                document.getElementById('student-name').value = student.name;
+                document.getElementById('student-email').value = student.email;
+                document.getElementById('student-grade').value = student.grade;
+                document.getElementById('student-section').value = student.section;
+                document.getElementById('student-total-amount').value = student.totalAmount;
+                document.getElementById('student-discount').value = student.discount;
+                document.getElementById('student-notes').value = student.notes || '';
+                
+                currentStudentId = studentId;
+                document.getElementById('edit-student-btn').disabled = false;
+                document.getElementById('delete-student-btn').disabled = false;
+                
+                // Scroll to form
+                document.getElementById('student-form').scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+        
+        // Delete student
+        function deleteStudent(studentId) {
+            students = students.filter(s => s.id !== studentId);
+            payments = payments.filter(p => p.studentId !== studentId);
+            
+            localStorage.setItem('students', JSON.stringify(students));
+            localStorage.setItem('payments', JSON.stringify(payments));
+            
+            resetStudentForm();
+            updateStudentsTable();
+            showAlert('تم حذف الطالب بنجاح');
+        }
+        
+        // Edit student button
+        document.getElementById('edit-student-btn').addEventListener('click', function() {
+            if (currentStudentId) {
+                document.getElementById('student-form').dispatchEvent(new Event('submit'));
+            }
+        });
+        
+        // Delete student button
+        document.getElementById('delete-student-btn').addEventListener('click', function() {
+            if (currentStudentId) {
+                showConfirmModal(
+                    'حذف طالب',
+                    'هل أنت متأكد من حذف هذا الطالب؟ سيتم حذف جميع بيانات الدفعات المرتبطة به أيضاً.',
+                    () => deleteStudent(currentStudentId)
+                );
+            }
+        });
+        
+        // Search for students
+        document.getElementById('search-btn').addEventListener('click', function() {
+            const searchName = document.getElementById('search-name').value.toLowerCase();
+            const searchGrade = document.getElementById('search-grade').value;
+            const searchSection = document.getElementById('search-section').value;
+            
+            const filteredStudents = students.filter(student => {
+                return (
+                    (searchName === '' || student.name.toLowerCase().includes(searchName)) &&
+                    (searchGrade === '' || student.grade === searchGrade) &&
+                    (searchSection === '' || student.section === searchSection)
+                );
+            });
+            
+            const resultsBody = document.getElementById('search-results-body');
+            resultsBody.innerHTML = '';
+            
+            if (filteredStudents.length === 0) {
+                document.getElementById('search-results').classList.remove('hidden');
+                resultsBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="px-4 py-4 text-center">لا توجد نتائج مطابقة للبحث</td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            filteredStudents.forEach(student => {
+                const paidAmount = student.paidAmount || 0;
+                const remainingAmount = student.totalAfterDiscount - paidAmount;
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-4 py-2">${student.name}</td>
+                    <td class="px-4 py-2">${student.grade}</td>
+                    <td class="px-4 py-2">${student.section}</td>
+                    <td class="px-4 py-2">${student.totalAfterDiscount.toLocaleString()} دينار</td>
+                    <td class="px-4 py-2">${paidAmount.toLocaleString()} دينار</td>
+                    <td class="px-4 py-2">${remainingAmount.toLocaleString()} دينار</td>
+                    <td class="px-4 py-2">
+                        <button class="pay-btn bg-green-500 text-white px-3 py-1 rounded-md hover:bg-green-600 transition text-sm" data-id="${student.id}">تسديد قسط</button>
+                    </td>
+                `;
+                
+                resultsBody.appendChild(row);
+            });
+            
+            document.getElementById('search-results').classList.remove('hidden');
+            
+            // Add event listeners to pay buttons
+            document.querySelectorAll('.pay-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    const studentId = button.getAttribute('data-id');
+                    selectStudentForPayment(studentId);
+                });
+            });
+        });
+        
+        // Select student for payment
+        function selectStudentForPayment(studentId) {
+            const student = students.find(s => s.id === studentId);
+            if (student) {
+                selectedStudentForPayment = student;
+                
+                // Update payment form with student info
+                document.getElementById('payment-student-name').textContent = student.name;
+                document.getElementById('payment-student-grade').textContent = student.grade;
+                document.getElementById('payment-student-section').textContent = student.section;
+                document.getElementById('payment-total-after-discount').textContent = student.totalAfterDiscount.toLocaleString();
+                document.getElementById('payment-paid-amount').textContent = (student.paidAmount || 0).toLocaleString();
+                document.getElementById('payment-remaining-amount').textContent = (student.totalAfterDiscount - (student.paidAmount || 0)).toLocaleString();
+                
+                // Show payment form
+                document.getElementById('payment-form').classList.remove('hidden');
+                
+                // Update payment history
+                updatePaymentHistory(studentId);
+                
+                // Scroll to payment form
+                document.getElementById('payment-form').scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+        
+        // Update payment history
+        function updatePaymentHistory(studentId) {
+            const historyBody = document.getElementById('payment-history');
+            historyBody.innerHTML = '';
+            
+            const studentPayments = payments.filter(p => p.studentId === studentId);
+            
+            if (studentPayments.length === 0) {
+                historyBody.innerHTML = `
+                    <tr>
+                        <td colspan="3" class="px-4 py-4 text-center">لا توجد دفعات سابقة</td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            studentPayments.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(payment => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-4 py-2">${formatDate(payment.date)}</td>
+                    <td class="px-4 py-2">${payment.amount.toLocaleString()} دينار</td>
+                    <td class="px-4 py-2">${payment.receiptNumber}</td>
+                `;
+                
+                historyBody.appendChild(row);
+            });
+        }
+        
+        // Add payment
+   document.getElementById('add-payment-btn').addEventListener('click', function() {
+            if (!selectedStudentForPayment) return;
+            
+            const amount = parseFloat(document.getElementById('payment-amount').value);
+            const receiptNumber = document.getElementById('payment-receipt-number').value;
+            const date = document.getElementById('payment-date').value;
+            
+            if (!amount || !receiptNumber || !date) {
+                showAlert('يرجى ملء جميع الحقول المطلوبة', 'error');
+                return;
+            }
+            
+            const remainingAmount = selectedStudentForPayment.totalAfterDiscount - (selectedStudentForPayment.paidAmount || 0);
+            
+            if (amount > remainingAmount) {
+                showAlert('المبلغ المدخل أكبر من المبلغ المتبقي', 'error');
+                return;
+            }
+            // Add payment
+            const newPayment = {
+                id: Date.now().toString(),
+                studentId: selectedStudentForPayment.id,
+                amount,
+                receiptNumber,
+                date
+            };
+            
+            payments.push(newPayment);
+            
+            // Update student paid amount
+            const studentIndex = students.findIndex(s => s.id === selectedStudentForPayment.id);
+            if (studentIndex !== -1) {
+                students[studentIndex].paidAmount = (students[studentIndex].paidAmount || 0) + amount;
+                selectedStudentForPayment = students[studentIndex];
+            }
+            
+            // Save to localStorage
+            localStorage.setItem('students', JSON.stringify(students));
+            localStorage.setItem('payments', JSON.stringify(payments));
+            
+            // Update payment form
+            document.getElementById('payment-paid-amount').textContent = selectedStudentForPayment.paidAmount.toLocaleString();
+            document.getElementById('payment-remaining-amount').textContent = (selectedStudentForPayment.totalAfterDiscount - selectedStudentForPayment.paidAmount).toLocaleString();
+            
+            // Update payment history
+            updatePaymentHistory(selectedStudentForPayment.id);
+            
+            // Reset payment form
+            document.getElementById('payment-amount').value = '';
+            document.getElementById('payment-receipt-number').value = '';
+            
+            // Update receipt preview
+            updateReceiptPreview(newPayment);
+            
+            showAlert('تم إضافة الدفعة بنجاح');
+        });
+        
+        // Update receipt preview
+        
+       
+  function updateReceiptPreview(payment) {
+    if (!selectedStudentForPayment || !payment) return;
+
+    const name = selectedStudentForPayment.name;
+    const grade = selectedStudentForPayment.grade;
+    const section = selectedStudentForPayment.section;
+    const receiptNumber = payment.receiptNumber;
+    const date = formatDate(payment.date);
+    const amount = payment.amount.toLocaleString();
+    const total = selectedStudentForPayment.totalAfterDiscount.toLocaleString();
+    const paid = selectedStudentForPayment.paidAmount.toLocaleString();
+    const remaining = (selectedStudentForPayment.totalAfterDiscount - selectedStudentForPayment.paidAmount).toLocaleString();
+
+    // تحديث الوصل الأول
+    document.getElementById('receipt-student-name').textContent = name;
+    document.getElementById('receipt-student-grade').textContent = grade;
+    document.getElementById('receipt-student-section').textContent = section;
+    document.getElementById('receipt-number').textContent = receiptNumber;
+    document.getElementById('receipt-date').textContent = date;
+    document.getElementById('receipt-amount').textContent = amount;
+    document.getElementById('receipt-total').textContent = total;
+    document.getElementById('receipt-total-paid').textContent = paid;
+    document.getElementById('receipt-remaining').textContent = remaining;
+
+    // ✅ تحديث الوصل الثاني (النسخة)
+    document.getElementById('receipt-student-name-copy').textContent = name;
+    document.getElementById('receipt-student-grade-copy').textContent = grade;
+    document.getElementById('receipt-student-section-copy').textContent = section;
+    document.getElementById('receipt-number-copy').textContent = receiptNumber;
+    document.getElementById('receipt-date-copy').textContent = date;
+    document.getElementById('receipt-amount-copy').textContent = amount;
+    document.getElementById('receipt-total-copy').textContent = total;
+    document.getElementById('receipt-total-paid-copy').textContent = paid;
+    document.getElementById('receipt-remaining-copy').textContent = remaining;
+}
+
+        // Print receipt
+        document.getElementById('print-receipt-btn').addEventListener('click', function() {
+            window.print();
+        });
+        
+        // Email receipt
+        document.getElementById('email-receipt-btn').addEventListener('click', function() {
+            if (!selectedStudentForPayment) return;
+            
+            if (!selectedStudentForPayment.email) {
+                showAlert('لا يوجد بريد إلكتروني مسجل للطالب', 'error');
+                return;
+            }
+            
+            // In a real application, this would send an email
+            // For this demo, we'll just show a success message
+            showAlert(`تم إرسال الوصل إلى البريد الإلكتروني: ${selectedStudentForPayment.email}`);
+        });
+        
+        // Update statistics
+        function updateStatistics() {
+            // Calculate totals
+            const totalStudents = students.length;
+            const totalFees = students.reduce((sum, student) => sum + student.totalAfterDiscount, 0);
+            const totalPaid = students.reduce((sum, student) => sum + (student.paidAmount || 0), 0);
+            const totalRemaining = totalFees - totalPaid;
+            
+            // Update statistics cards
+            document.getElementById('total-students').textContent = totalStudents;
+            document.getElementById('total-fees').textContent = totalFees.toLocaleString() + ' دينار';
+            document.getElementById('total-paid').textContent = totalPaid.toLocaleString() + ' دينار';
+            document.getElementById('total-remaining').textContent = totalRemaining.toLocaleString() + ' دينار';
+            
+            // Collection rate chart
+            const collectionCtx = document.getElementById('collection-chart').getContext('2d');
+            new Chart(collectionCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['المدفوع', 'المتبقي'],
+                    datasets: [{
+                        data: [totalPaid, totalRemaining],
+                        backgroundColor: ['#10B981', '#F59E0B'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            
+            // Grades distribution chart
+            const gradesCounts = {};
+            students.forEach(student => {
+                gradesCounts[student.grade] = (gradesCounts[student.grade] || 0) + 1;
+            });
+            
+            const gradesCtx = document.getElementById('grades-chart').getContext('2d');
+            new Chart(gradesCtx, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(gradesCounts),
+                    datasets: [{
+                        data: Object.values(gradesCounts),
+                        backgroundColor: [
+                            '#3B82F6', '#10B981', '#F59E0B', '#EF4444', 
+                            '#8B5CF6', '#EC4899', '#14B8A6', '#F97316',
+                            '#6366F1', '#84CC16', '#A855F7'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            
+            // Sections distribution chart
+            const sectionsCounts = {};
+            students.forEach(student => {
+                sectionsCounts[student.section] = (sectionsCounts[student.section] || 0) + 1;
+            });
+            
+            const sectionsCtx = document.getElementById('sections-chart').getContext('2d');
+            new Chart(sectionsCtx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(sectionsCounts),
+                    datasets: [{
+                        label: 'عدد الطلاب',
+                        data: Object.values(sectionsCounts),
+                        backgroundColor: '#3B82F6',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Backup data
+        document.getElementById('backup-btn').addEventListener('click', function() {
+            const backupData = {
+                students,
+                payments,
+                timestamp: new Date().toISOString()
+            };
+            
+            const dataStr = JSON.stringify(backupData);
+            const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+            
+            const exportFileName = `school_fees_backup_${formatDateForFile(new Date())}.json`;
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileName);
+            linkElement.click();
+            
+            showAlert('تم إنشاء النسخة الاحتياطية بنجاح');
+        });
+        
+        // Handle restore file selection
+        document.getElementById('restore-file').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                document.getElementById('selected-file-name').textContent = file.name;
+                document.getElementById('restore-btn').disabled = false;
+            } else {
+                document.getElementById('selected-file-name').textContent = 'لم يتم اختيار ملف';
+                document.getElementById('restore-btn').disabled = true;
+            }
+        });
+        
+        // Restore backup
+        document.getElementById('restore-btn').addEventListener('click', function() {
+            const fileInput = document.getElementById('restore-file');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showAlert('يرجى اختيار ملف النسخة الاحتياطية أولاً', 'error');
+                return;
+            }
+            
+            showConfirmModal(
+                'استعادة النسخة الاحتياطية',
+                'سيتم استبدال جميع البيانات الحالية بالبيانات من النسخة الاحتياطية. هل أنت متأكد من المتابعة؟',
+                () => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const backupData = JSON.parse(e.target.result);
+                            
+                            if (!backupData.students || !backupData.payments) {
+                                throw new Error('تنسيق ملف النسخة الاحتياطية غير صحيح');
+                            }
+                            
+                            students = backupData.students;
+                            payments = backupData.payments;
+                            
+                            localStorage.setItem('students', JSON.stringify(students));
+                            localStorage.setItem('payments', JSON.stringify(payments));
+                            
+                            updateStudentsTable();
+                            showAlert('تمت استعادة النسخة الاحتياطية بنجاح');
+                            
+                            // Reset file input
+                            fileInput.value = '';
+                            document.getElementById('selected-file-name').textContent = 'لم يتم اختيار ملف';
+                            document.getElementById('restore-btn').disabled = true;
+                            
+                        } catch (error) {
+                            showAlert('حدث خطأ أثناء استعادة النسخة الاحتياطية: ' + error.message, 'error');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            );
+        });
+        
+        // Export students to Excel
+        document.getElementById('export-students-btn').addEventListener('click', function() {
+            if (students.length === 0) {
+                showAlert('لا توجد بيانات للتصدير', 'error');
+                return;
+            }
+            
+            const studentsData = students.map(student => {
+                const paidAmount = student.paidAmount || 0;
+                const remainingAmount = student.totalAfterDiscount - paidAmount;
+                
+                return {
+                    'اسم الطالب': student.name,
+                    'البريد الإلكتروني': student.email || '',
+                    'الصف': student.grade,
+                    'الشعبة': student.section,
+                    'المبلغ الكلي': student.totalAmount,
+                    'الخصم (%)': student.discount,
+                    'المبلغ بعد الخصم': student.totalAfterDiscount,
+                    'المبلغ المدفوع': paidAmount,
+                    'المبلغ المتبقي': remainingAmount,
+                    'ملاحظات': student.notes || ''
+                };
+            });
+            
+            exportToExcel(studentsData, 'students_data');
+            showAlert('تم تصدير بيانات الطلاب بنجاح');
+        });
+        
+        // Export payments to Excel
+        document.getElementById('export-payments-btn').addEventListener('click', function() {
+            if (payments.length === 0) {
+                showAlert('لا توجد بيانات للتصدير', 'error');
+                return;
+            }
+            
+            const paymentsData = payments.map(payment => {
+                const student = students.find(s => s.id === payment.studentId) || {};
+                
+                return {
+                    'اسم الطالب': student.name || 'غير معروف',
+                    'الصف': student.grade || '',
+                    'الشعبة': student.section || '',
+                    'المبلغ': payment.amount,
+                    'رقم الوصل': payment.receiptNumber,
+                    'تاريخ الدفع': formatDate(payment.date)
+                };
+            });
+            
+            exportToExcel(paymentsData, 'payments_data');
+            showAlert('تم تصدير بيانات الدفعات بنجاح');
+        });
+        
+        // Export all data to Excel
+        document.getElementById('export-all-btn').addEventListener('click', function() {
+            if (students.length === 0 && payments.length === 0) {
+                showAlert('لا توجد بيانات للتصدير', 'error');
+                return;
+            }
+            
+            // Create a workbook with multiple sheets
+            const wb = XLSX.utils.book_new();
+            
+            // Students sheet
+            if (students.length > 0) {
+                const studentsData = students.map(student => {
+                    const paidAmount = student.paidAmount || 0;
+                    const remainingAmount = student.totalAfterDiscount - paidAmount;
+                    
+                    return {
+                        'اسم الطالب': student.name,
+                        'البريد الإلكتروني': student.email || '',
+                        'الصف': student.grade,
+                        'الشعبة': student.section,
+                        'المبلغ الكلي': student.totalAmount,
+                        'الخصم (%)': student.discount,
+                        'المبلغ بعد الخصم': student.totalAfterDiscount,
+                        'المبلغ المدفوع': paidAmount,
+                        'المبلغ المتبقي': remainingAmount,
+                        'ملاحظات': student.notes || ''
+                    };
+                });
+                
+                const ws = XLSX.utils.json_to_sheet(studentsData);
+                XLSX.utils.book_append_sheet(wb, ws, 'الطلاب');
+            }
+            
+            // Payments sheet
+            if (payments.length > 0) {
+                const paymentsData = payments.map(payment => {
+                    const student = students.find(s => s.id === payment.studentId) || {};
+                    
+                    return {
+                        'اسم الطالب': student.name || 'غير معروف',
+                        'الصف': student.grade || '',
+                        'الشعبة': student.section || '',
+                        'المبلغ بعد الخصم': student.totalAfterDiscount,
+                        'المبلغ': payment.amount,
+                        'رقم الوصل': payment.receiptNumber,
+                        'المبلغ المتبقي': remainingAmount,
+                        'تاريخ الدفع': formatDate(payment.date)
+                        
+                    };
+                });
+                
+                const ws = XLSX.utils.json_to_sheet(paymentsData);
+                XLSX.utils.book_append_sheet(wb, ws, 'الدفعات');
+            }
+            
+            // Export the workbook
+            XLSX.writeFile(wb, `school_fees_data_${formatDateForFile(new Date())}.xlsx`);
+            showAlert('تم تصدير جميع البيانات بنجاح');
+        });
+        
+        // Clear all data
+        document.getElementById('clear-data-btn').addEventListener('click', function() {
+            showConfirmModal(
+                'مسح جميع البيانات',
+                'سيتم حذف جميع البيانات من النظام بشكل نهائي. هل أنت متأكد من المتابعة؟',
+                () => {
+                    students = [];
+                    payments = [];
+                    
+                    localStorage.setItem('students', JSON.stringify(students));
+                    localStorage.setItem('payments', JSON.stringify(payments));
+                    
+                    updateStudentsTable();
+                    showAlert('تم مسح جميع البيانات بنجاح');
+                }
+            );
+        });
+        
+        // Helper function to format date
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ar-IQ');
+        }
+        
+        // Helper function to format date for filenames
+        function formatDateForFile(date) {
+            return date.toISOString().split('T')[0];
+        }
+        
+        // Helper function to export data to Excel
+        function exportToExcel(data, fileName) {
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Data');
+            XLSX.writeFile(wb, `${fileName}_${formatDateForFile(new Date())}.xlsx`);
+        }
+        
+        // Show alert message
+        function showAlert(message, type = 'success') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `fixed top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-md shadow-lg z-50 ${
+                type === 'success' ? 'bg-green-500' : 'bg-red-500'
+            } text-white`;
+            alertDiv.textContent = message;
+            
+            document.body.appendChild(alertDiv);
+            
+            setTimeout(() => {
+                alertDiv.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+                setTimeout(() => {
+                    document.body.removeChild(alertDiv);
+                }, 500);
+            }, 3000);
+        }
+        
+        // Show confirmation modal
+        function showConfirmModal(title, message, confirmCallback) {
+            const modal = document.getElementById('modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalMessage = document.getElementById('modal-message');
+            const modalConfirm = document.getElementById('modal-confirm');
+            const modalCancel = document.getElementById('modal-cancel');
+            
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            
+            modal.classList.remove('hidden');
+            
+            modalConfirm.onclick = () => {
+                confirmCallback();
+                modal.classList.add('hidden');
+            };
+            
+            modalCancel.onclick = () => {
+                modal.classList.add('hidden');
+            };
+        }
+        
+        // Initialize the app
+        updateStudentsTable();
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'93d44797a53fac2f',t:'MTc0NjgyNjAzNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js');
+  }
+
+  let deferredPrompt;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+
+    // إظهار زر مخصص
+    const btn = document.createElement('button');
+    btn.textContent = "📲 أضف إلى الشاشة الرئيسية";
+    btn.style = "position: fixed; bottom: 20px; right: 20px; padding: 12px 18px; background: #1e40af; color: white; border: none; border-radius: 10px;";
+    btn.onclick = () => {
+      deferredPrompt.prompt();
+    };
+    document.body.appendChild(btn);
+  });
+</script>
+</body>
+</html>
